@@ -513,6 +513,9 @@ checkConfigOutput '^34|23$' options.submoduleLine34.declarationPositions.1.line 
 # nested options work
 checkConfigOutput '^30$' options.nested.nestedLine30.declarationPositions.0.line ./declaration-positions.nix
 
+# mkForAllAttrs
+checkConfigOutput '^true$' config.result ./for-all-attrs.nix
+
 cat <<EOF
 ====== module tests ======
 $pass Pass

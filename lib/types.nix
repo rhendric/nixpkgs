@@ -30,6 +30,7 @@ let
     imap1
     last
     length
+    partition
     tail
     ;
   inherit (lib.attrsets)
@@ -581,11 +582,17 @@ rec {
       descriptionClass = "composite";
       check = isAttrs;
       merge = loc: defs:
+        let
+          partitionedDefs = partition (d: d.value._type or "" == "forAllAttrs") defs;
+          forAllAttrses = partitionedDefs.right;
+          defs' = partitionedDefs.wrong;
+          extraDefs = name: map (def: { inherit (def) file; value = def.value.content name; }) forAllAttrses;
+        in
         mapAttrs (n: v: v.value) (filterAttrs (n: v: v ? value) (zipAttrsWith (name: defs:
-            (mergeDefinitions (loc ++ [name]) elemType defs).optionalValue
+            (mergeDefinitions (loc ++ [name]) elemType (defs ++ extraDefs name)).optionalValue
           )
           # Push down position info.
-          (map (def: mapAttrs (n: v: { inherit (def) file; value = v; }) def.value) defs)));
+          (map (def: mapAttrs (n: v: { inherit (def) file; value = v; }) def.value) defs')));
       emptyValue = { value = {}; };
       getSubOptions = prefix: elemType.getSubOptions (prefix ++ ["<name>"]);
       getSubModules = elemType.getSubModules;
@@ -605,13 +612,19 @@ rec {
       descriptionClass = "composite";
       check = isAttrs;
       merge = loc: defs:
+        let
+          partitionedDefs = partition (d: d.value._type or "" == "forAllAttrs") defs;
+          forAllAttrses = partitionedDefs.right;
+          defs' = partitionedDefs.wrong;
+          extraDefs = name: map (def: { inherit (def) file; value = def.value.content name; }) forAllAttrses;
+        in
         zipAttrsWith (name: defs:
-          let merged = mergeDefinitions (loc ++ [name]) elemType defs;
+          let merged = mergeDefinitions (loc ++ [name]) elemType (defs ++ extraDefs name);
           # mergedValue will trigger an appropriate error when accessed
           in merged.optionalValue.value or elemType.emptyValue.value or merged.mergedValue
         )
         # Push down position info.
-        (map (def: mapAttrs (n: v: { inherit (def) file; value = v; }) def.value) defs);
+        (map (def: mapAttrs (n: v: { inherit (def) file; value = v; }) def.value) defs');
       emptyValue = { value = {}; };
       getSubOptions = prefix: elemType.getSubOptions (prefix ++ ["<name>"]);
       getSubModules = elemType.getSubModules;
